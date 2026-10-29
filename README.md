@@ -2,7 +2,7 @@
 
 Este proyecto automatiza la extracción diaria de entrenamientos desde Strava y su volcado en un documento de Google Sheets utilizando un script en Python y GitHub Actions. 
 
-Es una arquitectura *serverless* y de coste cero, diseñada para alimentar posteriormente una IA (Gemini) que actúa como entrenador personal, ajustando la planificación para la **Cactus Challenge**.
+Es una arquitectura *serverless* y de coste cero, diseñada para alimentar posteriormente una IA (Gemini) que actúa como entrenador personal, ajustando la planificación.
 
 ## 🚀 Cómo funciona
 
@@ -52,4 +52,3 @@ Para que el script funcione de forma segura, ve a la pestaña de tu repositorio 
 *   **Manual:** Puedes forzar la ejecución yendo a la pestaña **Actions** en GitHub, seleccionando "Strava to Google Sheets Sync" en la izquierda, y haciendo clic en **Run workflow**.
 
 ---
-*Diseñado para la planificación de MTB 2026.*
