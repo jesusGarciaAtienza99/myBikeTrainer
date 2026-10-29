@@ -1,54 +1,113 @@
 # Strava to Google Sheets Auto-Sync 🚴‍♂️📊
 
-Este proyecto automatiza la extracción diaria de entrenamientos desde Strava y su volcado en un documento de Google Sheets utilizando un script en Python y GitHub Actions. 
+This project automates the daily extraction of workouts from Strava and uploads them to a Google Sheets document using a Python script and GitHub Actions.
 
-Es una arquitectura *serverless* y de coste cero, diseñada para alimentar posteriormente una IA (Gemini) que actúa como entrenador personal, ajustando la planificación.
+It is a serverless, zero-cost architecture designed to later feed an AI (Gemini) that acts as a personal trainer, adjusting the training plan.
 
-## 🚀 Cómo funciona
+## 🚀 How it works
 
-1. **GitHub Actions** ejecuta el script `main.py` todos los días a las 05:00 UTC (madrugada).
-2. El script se conecta a la **API de Strava** usando un *Refresh Token* para obtener los datos del último entrenamiento (Duración, Vatios, FC, Carga, Desnivel).
-3. Se conecta a **Google Sheets** mediante una Service Account y añade una nueva fila en la pestaña `Seguimiento de entrenos`.
+1. **GitHub Actions** runs the `main.py` script every day at 05:00 UTC.
+2. The script connects to the **Strava API** using a *Refresh Token* to retrieve the latest workout data (duration, power, heart rate, load, elevation gain).
+3. It connects to **Google Sheets** using a Service Account and adds a new row to the `Workout Tracking` tab.
 
 ---
 
-## 🛠️ Configuración Paso a Paso
+## 🛠️ Step-by-step setup
 
-### Paso 1: Configurar Google Cloud y Google Sheets
-1. Crea un proyecto en [Google Cloud Console](https://console.cloud.google.com).
-2. Habilita las APIs: **Google Sheets API** y **Google Drive API**.
-3. Ve a **IAM y administración > Cuentas de servicio** y crea una nueva.
-4. En la pestaña de "Claves", genera una nueva clave en formato **JSON** y descárgala.
-5. Abre tu archivo de Google Sheets, haz clic en "Compartir" y dale permisos de **Editor** al correo electrónico de la cuenta de servicio (ej. `tu-bot@tu-proyecto.iam.gserviceaccount.com`).
+### Step 1: Configure Google Cloud and Google Sheets
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com).
+2. Enable the APIs: **Google Sheets API** and **Google Drive API**.
+3. Go to **IAM & Admin > Service Accounts** and create a new one.
+4. In the "Keys" tab, generate a new key in **JSON** format and download it.
+5. Open your Google Sheets file, click **Share**, and grant **Editor** permissions to the service account email (for example: `tu-bot@tu-proyecto.iam.gserviceaccount.com`).
 
-### Paso 2: Obtener Credenciales de Strava
-1. Ve a [Configuración de API en Strava](https://www.strava.com/settings/api) y crea una aplicación (en *Authorization Callback Domain* pon `localhost`).
-2. Apunta tu **Client ID** (ID de cliente) y **Client Secret** (Secreto de cliente).
-3. Para obtener el *Refresh Token* con permisos completos, pega esta URL en tu navegador sustituyendo `TU_CLIENT_ID`:
+### Step 2: Get Strava credentials
+1. Go to [Strava API Settings](https://www.strava.com/settings/api) and create an application (set `localhost` in the *Authorization Callback Domain*).
+2. Note your **Client ID** and **Client Secret**.
+3. To obtain the *Refresh Token* with full permissions, paste this URL into your browser, replacing `TU_CLIENT_ID`:
    `https://www.strava.com/oauth/authorize?client_id=TU_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=activity:read_all`
-4. Autoriza la app. Serás redirigido a una página de error. Copia el valor del parámetro `code` que aparece en la barra de direcciones de tu navegador.
-5. Abre la consola del sistema (cmd) y ejecuta:
+4. Authorize the app. You will be redirected to an error page. Copy the value of the `code` parameter shown in the browser address bar.
+5. Open the system console (`cmd`) and run:
    ```cmd
    curl.exe -X POST https://www.strava.com/oauth/token -d client_id=TU_CLIENT_ID -d client_secret=TU_CLIENT_SECRET -d code=EL_CODIGO_COPIADO -d grant_type=authorization_code
    ```
-6. Del JSON que te devuelva, copia el valor de `refresh_token`.
+6. From the JSON response, copy the value of `refresh_token`.
 
-### Paso 3: Configurar el Repositorio de GitHub
-Debes tener la siguiente estructura de archivos en tu repositorio:
-*   `main.py`: Contiene la lógica de extracción y escritura.
-*   `requirements.txt`: Contiene las dependencias (`requests`, `gspread`, `google-auth`).
-*   `.github/workflows/strava_sync.yml`: Contiene la configuración del cron job de GitHub Actions.
+### Step 3: Configure the GitHub repository
+You need the following file structure in your repository:
+* `main.py`: Contains the extraction and writing logic.
+* `requirements.txt`: Contains the dependencies (`requests`, `gspread`, `google-auth`).
+* `.github/workflows/strava_sync.yml`: Contains the GitHub Actions cron job configuration.
 
-### Paso 4: Configurar los Secretos en GitHub (¡Crítico!)
-Para que el script funcione de forma segura, ve a la pestaña de tu repositorio en GitHub: **Settings > Secrets and variables > Actions** y añade los siguientes secretos de repositorio (*New repository secret*):
+### Step 4: Configure GitHub secrets (critical)
+For the script to work safely, go to your repository in GitHub: **Settings > Secrets and variables > Actions** and add the following repository secrets:
 
-*   `STRAVA_CLIENT_ID`: Tu ID numérico de Strava.
-*   `STRAVA_CLIENT_SECRET`: Tu secreto alfanumérico de Strava.
-*   `STRAVA_REFRESH_TOKEN`: El token final que obtuviste en el Paso 2.
-*   `GOOGLE_CREDENTIALS_JSON`: Todo el contenido (con llaves `{}` incluidas) del archivo JSON que descargaste de Google Cloud en el Paso 1.
+* `STRAVA_CLIENT_ID`: Your Strava numeric ID.
+* `STRAVA_CLIENT_SECRET`: Your Strava alphanumeric secret.
+* `STRAVA_REFRESH_TOKEN`: The final token you obtained in Step 2.
+* `GOOGLE_CREDENTIALS_JSON`: The full content (including the `{}` braces) of the JSON file downloaded from Google Cloud in Step 1.
 
-### Paso 5: Ejecución y Pruebas
-*   **Automática:** El flujo está configurado en el archivo `.yml` para ejecutarse solo cada día a las 05:00 UTC mediante un `cron`.
-*   **Manual:** Puedes forzar la ejecución yendo a la pestaña **Actions** en GitHub, seleccionando "Strava to Google Sheets Sync" en la izquierda, y haciendo clic en **Run workflow**.
+### Step 5: Run and test
+* **Automatic:** The workflow is configured in the `.yml` file to run once a day at 05:00 UTC via a `cron`.
+* **Manual:** You can trigger it by going to the **Actions** tab in GitHub, selecting **Strava to Google Sheets Sync** on the left, and clicking **Run workflow**.
 
 ---
+
+## 🔐 Example of GitHub Actions workflow
+
+The project is designed to run automatically by scheduling the script with GitHub Actions. A typical workflow could look like this:
+
+```yaml
+name: Strava to Google Sheets Sync
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run sync script
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        run: python main.py
+```
+
+---
+
+## ✅ What this project gives you
+
+- Daily automatic synchronization from Strava to Google Sheets
+- No server required
+- No paid infrastructure needed
+- Base data ready for future automation or AI-based analysis
+- Easy integration with personal training planning
+
+---
+
+## 📌 Notes
+
+This project is intended as a starting point for a personal fitness data pipeline. You can extend it later to include:
+- training history analysis,
+- weekly summaries,
+- load trend detection,
+- automatic recommendations generated by AI.
+
